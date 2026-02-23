@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Exam System</title>
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    body { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, #0f2447 0%, #1a3a6b 100%);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 200;
+    }
+    .sidebar-logo {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo .icon { font-size: 1.6rem; }
+    .sidebar-logo h2 { color: white; font-size: 1rem; }
+    .sidebar-logo p { color: rgba(255,255,255,0.55); font-size: 0.75rem; }
+
+    .nav-section { padding: 14px 12px 6px; }
+    .nav-section-title { color: rgba(255,255,255,0.4); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 8px 6px; font-weight: 600; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: rgba(255,255,255,0.75);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      text-decoration: none;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: white; }
+    .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-footer button {
+      background: rgba(231,76,60,0.2);
+      border: 1px solid rgba(231,76,60,0.4);
+      color: #ff9a8b;
+      border-radius: 8px;
+      padding: 9px 16px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      width: 100%;
+      font-family: var(--font);
+      transition: background 0.15s;
+    }
+    .sidebar-footer button:hover { background: rgba(231,76,60,0.35); }
+
+    /* Main area */
+    .main-content { margin-left: 240px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .main-header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+    }
+    .main-header h2 { font-size: 1.15rem; color: var(--primary); }
+    .admin-chip {
+      background: #eef3fc;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .main-body { padding: 28px; flex: 1; }
+
+    /* Sections */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Stat cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon { font-size: 2rem; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .stat-label { color: var(--text-muted); font-size: 0.82rem; margin-top: 2px; }
+    .stat-card.green .stat-value { color: var(--success); }
+    .stat-card.gold .stat-value { color: var(--accent); }
+    .stat-card.red .stat-value { color: var(--danger); }
+
+    /* Exam active toggle */
+    .toggle-row { display: flex; align-items: center; gap: 14px; }
+    .toggle { position: relative; width: 52px; height: 28px; cursor: pointer; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #ccc;
+      border-radius: 28px;
+      transition: 0.3s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      left: 4px; bottom: 4px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle input:checked + .toggle-slider { background: #1a7a4a; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(24px); }
+
+    /* Top students table */
+    .section-title { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 14px; }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-240px); }
+      .main-content { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon">📋</span>
+    <div><h2>ExamAdmin</h2><p>Control Panel</p></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Overview</div>
+    <a class="nav-item active" onclick="showSection('dashboard')" data-section="dashboard"><span class="icon">📊</span> Dashboard</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Exam Management</div>
+    <a class="nav-item" onclick="showSection('questions')" data-section="questions"><span class="icon">❓</span> Questions</a>
+    <a class="nav-item" onclick="showSection('settings')" data-section="settings"><span class="icon">⚙️</span> Exam Settings</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Students & Results</div>
+    <a class="nav-item" onclick="showSection('results')" data-section="results"><span class="icon">🏆</span> Results</a>
+    <a class="nav-item" onclick="showSection('students')" data-section="students"><span class="icon">👥</span> Students</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button onclick="logout()">⏏ Logout</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main-content">
+  <div class="main-header">
+    <h2 id="section-heading">Dashboard</h2>
+    <div class="admin-chip">🛡 Admin</div>
+  </div>
+
+  <div class="main-body">
+
+    <!-- ─── DASHBOARD ─── -->
+    <div class="section active" id="section-dashboard">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><span class="stat-icon">👥</span><div><div class="stat-value" id="stat-students">—</div><div class="stat-label">Registered Students</div></div></div>
+        <div class="stat-card green"><span class="stat-icon">✅</span><div><div class="stat-value" id="stat-attempted">—</div><div class="stat-label">Attempted</div></div></div>
+        <div class="stat-card gold"><span class="stat-icon">❓</span><div><div class="stat-value" id="stat-questions">—</div><div class="stat-label">Questions</div></div></div>
+        <div class="stat-card" id="stat-status-card"><span class="stat-icon" id="stat-status-icon">🔴</span><div><div class="stat-value" id="stat-status">Inactive</div><div class="stat-label">Exam Status</div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">🏆 Top Performers</div>
+        <div class="table-wrap">
+          <table id="top-table">
+            <thead><tr><th>Rank</th><th>Roll No.</th><th>Name</th><th>Score</th><th>Percentage</th><th>Submitted</th></tr></thead>
+            <tbody id="top-tbody"><tr><td colspan="6" class="text-center text-muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── QUESTIONS ─── -->
+    <div class="section" id="section-questions">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div class="section-title" style="margin:0">Manage Questions</div>
+        <button class="btn btn-primary" onclick="openAddQuestion()">＋ Add Question</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Question</th><th>Type</th><th>Marks</th><th>Actions</th></tr></thead>
+            <tbody id="questions-tbody"><tr><td colspan="5" class="text-center text-muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS ─── -->
+    <div class="section" id="section-settings">
+      <div class="card" style="max-width:600px">
+        <h3 style="margin-bottom:20px">⚙️ Exam Settings</h3>
+        <form id="settings-form">
+          <div class="form-group">
+            <label class="form-label">Exam Title</label>
+            <input type="text" class="form-control" id="set-title" placeholder="Online Examination">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (minutes)</label>
+            <input type="number" class="form-control" id="set-duration" min="1" max="300" value="30">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Instructions for Students</label>
+            <textarea class="form-control" id="set-instructions" rows="3" placeholder="Any special instructions..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Exam Active Status</label>
+            <div class="toggle-row">
+              <label class="toggle">
+                <input type="checkbox" id="set-active">
+                <span class="toggle-slider"></span>
+              </label>
+              <span id="active-label" style="font-weight:600">Inactive</span>
+            </div>
+            <p class="text-muted mt-1">Students can only login and take exam when status is Active.</p>
+          </div>
+          <button type="submit" class="btn btn-primary">💾 Save Settings</button>
+        </form>
+        <div id="settings-alert" class="alert hidden mt-2"></div>
+      </div>
+    </div>
+
+    <!-- ─── RESULTS ─── -->
+    <div class="section" id="section-results">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div class="section-title" style="margin:0">Student Results (Sorted by Score)</div>
+        <button class="btn btn-success" onclick="exportResults()">📥 Export to Excel</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rank</th><th>Roll No.</th><th>Name</th><th>Score</th><th>%</th><th>Submitted</th><th>Type</th><th>Tab Sw.</th><th>FS Exits</th><th>Details</th></tr></thead>
+            <tbody id="results-tbody"><tr><td colspan="10" class="text-center text-muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── STUDENTS ─── -->
+    <div class="section" id="section-students">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div class="section-title" style="margin:0">Registered Students</div>
+        <button class="btn btn-success" onclick="exportStudents()">📥 Export Student Data</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Roll No.</th><th>Name</th><th>Login Time</th><th>Exam Started</th><th>Attempted</th><th>Registered</th><th>Action</th></tr></thead>
+            <tbody id="students-tbody"><tr><td colspan="7" class="text-center text-muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-body -->
+</div><!-- end main-content -->
+
+<!-- ─── Add/Edit Question Modal ─── -->
+<div class="modal-overlay" id="question-modal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Question</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form id="question-form">
+      <input type="hidden" id="q-edit-id">
+      <div class="form-group">
+        <label class="form-label">Question Text *</label>
+        <textarea class="form-control" id="q-text" rows="3" required placeholder="Enter the question..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Question Type *</label>
+        <select class="form-control" id="q-type" onchange="toggleQuestionType()">
+          <option value="mcq">Multiple Choice (MCQ)</option>
+          <option value="fill">Fill in the Blank</option>
+        </select>
+      </div>
+      <div id="mcq-section">
+        <div class="form-group">
+          <label class="form-label">Option A *</label>
+          <input type="text" class="form-control" id="opt-0" placeholder="Option A">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Option B *</label>
+          <input type="text" class="form-control" id="opt-1" placeholder="Option B">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Option C</label>
+          <input type="text" class="form-control" id="opt-2" placeholder="Option C (optional)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Option D</label>
+          <input type="text" class="form-control" id="opt-3" placeholder="Option D (optional)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correct Answer (index: 0=A, 1=B, 2=C, 3=D) *</label>
+          <select class="form-control" id="q-correct-mcq">
+            <option value="0">A (Option 0)</option>
+            <option value="1">B (Option 1)</option>
+            <option value="2">C (Option 2)</option>
+            <option value="3">D (Option 3)</option>
+          </select>
+        </div>
+      </div>
+      <div id="fill-section" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Correct Answer *</label>
+          <input type="text" class="form-control" id="q-correct-fill" placeholder="Expected answer (case-insensitive match)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Marks</label>
+        <input type="number" class="form-control" id="q-marks" value="1" min="1" max="100">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Order (for display sequence)</label>
+        <input type="number" class="form-control" id="q-order" value="0" min="0">
+      </div>
+      <div id="q-alert" class="alert hidden"></div>
+      <div class="flex-gap">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="q-submit-btn">Add Question</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Result Detail Modal -->
+<div class="modal-overlay" id="result-modal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Answer Details</h3>
+      <button class="modal-close" onclick="closeResultModal()">✕</button>
+    </div>
+    <div id="result-detail-content">Loading...</div>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api/admin';
+let adminToken = localStorage.getItem('adminToken');
+
+if (!adminToken) { window.location.href = '/admin/login.html'; }
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` };
+}
+
+// ─── Navigation ───────────────────────────────────
+const headings = { dashboard:'Dashboard', questions:'Question Bank', settings:'Exam Settings', results:'Student Results', students:'Registered Students' };
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  document.querySelector(`[data-section="${name}"]`).classList.add('active');
+  document.getElementById('section-heading').textContent = headings[name];
+
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'questions') loadQuestions();
+  if (name === 'settings') loadSettings();
+  if (name === 'results') loadResults();
+  if (name === 'students') loadStudents();
+}
+
+function logout() {
+  if (confirm('Logout from admin panel?')) {
+    localStorage.removeItem('adminToken');
+    window.location.href = '/admin/login.html';
+  }
+}
+
+// ─── Dashboard ────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${API_BASE}/dashboard`, { headers: authHeaders() });
+    const data = await res.json();
+    if (!data.success) return;
+
+    const s = data.stats;
+    document.getElementById('stat-students').textContent = s.totalStudents;
+    document.getElementById('stat-attempted').textContent = s.attempted;
+    document.getElementById('stat-questions').textContent = s.totalQuestions;
+    document.getElementById('stat-status').textContent = s.examActive ? 'Active' : 'Inactive';
+    document.getElementById('stat-status-icon').textContent = s.examActive ? '🟢' : '🔴';
+
+    const tbody = document.getElementById('top-tbody');
+    if (!data.topStudents.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No submissions yet</td></tr>';
+    } else {
+      tbody.innerHTML = data.topStudents.map((r,i) => `
+        <tr>
+          <td><span class="badge badge-primary">#${i+1}</span></td>
+          <td>${r.rollNumber}</td>
+          <td>${r.fullName}</td>
+          <td><strong>${r.totalMarks}/${r.maxMarks}</strong></td>
+          <td>${r.percentage}%</td>
+          <td>${new Date(r.submittedAt).toLocaleString()}</td>
+        </tr>`).join('');
+    }
+  } catch(e) { handleAuthError(e); }
+}
+
+// ─── Questions ────────────────────────────────────
+let questionsData = [];
+
+async function loadQuestions() {
+  try {
+    const res = await fetch(`${API_BASE}/questions`, { headers: authHeaders() });
+    const data = await res.json();
+    questionsData = data.questions || [];
+    const tbody = document.getElementById('questions-tbody');
+
+    if (!questionsData.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No questions added yet. Click "Add Question" to start.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = questionsData.map((q, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td style="max-width:300px">${escapeHtml(q.questionText.substring(0,80))}${q.questionText.length>80?'...':''}</td>
+        <td><span class="badge ${q.questionType==='mcq'?'badge-info':'badge-warning'}">${q.questionType.toUpperCase()}</span></td>
+        <td>${q.marks}</td>
+        <td>
+          <div class="flex-gap">
+            <button class="btn btn-outline btn-sm" onclick="editQuestion('${q._id}')">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q._id}')">🗑 Delete</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { handleAuthError(e); }
+}
+
+function openAddQuestion() {
+  document.getElementById('modal-title').textContent = 'Add Question';
+  document.getElementById('q-submit-btn').textContent = 'Add Question';
+  document.getElementById('question-form').reset();
+  document.getElementById('q-edit-id').value = '';
+  document.getElementById('q-alert').classList.add('hidden');
+  toggleQuestionType();
+  document.getElementById('question-modal').classList.add('active');
+}
+
+function editQuestion(id) {
+  const q = questionsData.find(x => x._id === id);
+  if (!q) return;
+  document.getElementById('modal-title').textContent = 'Edit Question';
+  document.getElementById('q-submit-btn').textContent = 'Update Question';
+  document.getElementById('q-edit-id').value = id;
+  document.getElementById('q-text').value = q.questionText;
+  document.getElementById('q-type').value = q.questionType;
+  document.getElementById('q-marks').value = q.marks;
+  document.getElementById('q-order').value = q.order;
+  document.getElementById('q-alert').classList.add('hidden');
+
+  if (q.questionType === 'mcq') {
+    document.getElementById('opt-0').value = q.options[0] || '';
+    document.getElementById('opt-1').value = q.options[1] || '';
+    document.getElementById('opt-2').value = q.options[2] || '';
+    document.getElementById('opt-3').value = q.options[3] || '';
+    document.getElementById('q-correct-mcq').value = q.correctAnswer;
+  } else {
+    document.getElementById('q-correct-fill').value = q.correctAnswer;
+  }
+  toggleQuestionType();
+  document.getElementById('question-modal').classList.add('active');
+}
+
+function toggleQuestionType() {
+  const type = document.getElementById('q-type').value;
+  document.getElementById('mcq-section').style.display = type === 'mcq' ? '' : 'none';
+  document.getElementById('fill-section').style.display = type === 'fill' ? '' : 'none';
+}
+
+function closeModal() { document.getElementById('question-modal').classList.remove('active'); }
+
+document.getElementById('question-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const editId = document.getElementById('q-edit-id').value;
+  const type = document.getElementById('q-type').value;
+  const alertEl = document.getElementById('q-alert');
+
+  let correctAnswer;
+  let options = [];
+
+  if (type === 'mcq') {
+    options = [
+      document.getElementById('opt-0').value.trim(),
+      document.getElementById('opt-1').value.trim(),
+      document.getElementById('opt-2').value.trim(),
+      document.getElementById('opt-3').value.trim()
+    ].filter(o => o);
+    correctAnswer = document.getElementById('q-correct-mcq').value;
+    if (options.length < 2) {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = 'Please provide at least 2 options for MCQ.';
+      alertEl.classList.remove('hidden');
+      return;
+    }
+  } else {
+    correctAnswer = document.getElementById('q-correct-fill').value.trim();
+    if (!correctAnswer) {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = 'Please provide the correct answer.';
+      alertEl.classList.remove('hidden');
+      return;
+    }
+  }
+
+  const payload = {
+    questionText: document.getElementById('q-text').value.trim(),
+    questionType: type,
+    options,
+    correctAnswer,
+    marks: parseInt(document.getElementById('q-marks').value) || 1,
+    order: parseInt(document.getElementById('q-order').value) || 0
+  };
+
+  try {
+    const url = editId ? `${API_BASE}/questions/${editId}` : `${API_BASE}/questions`;
+    const method = editId ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(payload) });
+    const data = await res.json();
+
+    if (data.success) {
+      closeModal();
+      loadQuestions();
+    } else {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = data.message || 'Error saving question';
+      alertEl.classList.remove('hidden');
+    }
+  } catch(err) {
+    alertEl.className = 'alert alert-error';
+    alertEl.textContent = 'Server error';
+    alertEl.classList.remove('hidden');
+  }
+});
+
+async function deleteQuestion(id) {
+  if (!confirm('Delete this question? This cannot be undone.')) return;
+  try {
+    await fetch(`${API_BASE}/questions/${id}`, { method: 'DELETE', headers: authHeaders() });
+    loadQuestions();
+  } catch(e) {}
+}
+
+// ─── Settings ─────────────────────────────────────
+async function loadSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/settings`, { headers: authHeaders() });
+    const data = await res.json();
+    const s = data.settings;
+    document.getElementById('set-title').value = s.examTitle || '';
+    document.getElementById('set-duration').value = s.duration || 30;
+    document.getElementById('set-instructions').value = s.instructions || '';
+    const activeCheck = document.getElementById('set-active');
+    activeCheck.checked = s.isActive;
+    updateActiveLabel();
+  } catch(e) {}
+}
+
+document.getElementById('set-active').addEventListener('change', updateActiveLabel);
+function updateActiveLabel() {
+  const checked = document.getElementById('set-active').checked;
+  const label = document.getElementById('active-label');
+  label.textContent = checked ? 'Active (Students can take exam)' : 'Inactive (Exam locked)';
+  label.style.color = checked ? 'var(--success)' : 'var(--danger)';
+}
+
+document.getElementById('settings-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById('settings-alert');
+  try {
+    const res = await fetch(`${API_BASE}/settings`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({
+        examTitle: document.getElementById('set-title').value,
+        duration: document.getElementById('set-duration').value,
+        instructions: document.getElementById('set-instructions').value,
+        isActive: document.getElementById('set-active').checked
+      })
+    });
+    const data = await res.json();
+    alertEl.className = `alert alert-${data.success ? 'success' : 'error'}`;
+    alertEl.textContent = data.success ? '✅ Settings saved successfully!' : data.message;
+    alertEl.classList.remove('hidden');
+    setTimeout(() => alertEl.classList.add('hidden'), 3000);
+  } catch(e) {
+    alertEl.className = 'alert alert-error';
+    alertEl.textContent = 'Server error';
+    alertEl.classList.remove('hidden');
+  }
+});
+
+// ─── Results ──────────────────────────────────────
+async function loadResults() {
+  try {
+    const res = await fetch(`${API_BASE}/results`, { headers: authHeaders() });
+    const data = await res.json();
+    const tbody = document.getElementById('results-tbody');
+
+    if (!data.results.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No submissions yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.results.map((r, i) => `
+      <tr>
+        <td><strong>#${i+1}</strong></td>
+        <td>${r.rollNumber}</td>
+        <td>${r.fullName}</td>
+        <td><strong>${r.totalMarks}/${r.maxMarks}</strong></td>
+        <td>${r.percentage}%</td>
+        <td style="white-space:nowrap">${new Date(r.submittedAt).toLocaleString()}</td>
+        <td><span class="badge ${r.submissionType==='manual'?'badge-success':'badge-danger'}">${r.submissionType.replace('_',' ')}</span></td>
+        <td>${r.tabSwitchCount}</td>
+        <td>${r.fullscreenExitCount}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="showResultDetail('${r._id}')">View</button></td>
+      </tr>`).join('');
+  } catch(e) { handleAuthError(e); }
+}
+
+async function showResultDetail(id) {
+  document.getElementById('result-modal').classList.add('active');
+  document.getElementById('result-detail-content').innerHTML = '<div class="text-center" style="padding:20px"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(`${API_BASE}/results/${id}`, { headers: authHeaders() });
+    const data = await res.json();
+    const r = data.result;
+    const answersHtml = r.answers.map((a, i) => `
+      <div style="padding:10px;border-bottom:1px solid #eef">
+        <div style="font-weight:600;font-size:0.9rem">Q${i+1}: ${escapeHtml(a.questionText)}</div>
+        <div style="margin-top:6px;font-size:0.88rem">
+          <span>Answer: <strong>${escapeHtml(a.givenAnswer || '(blank)')}</strong></span>
+          &nbsp;&nbsp;
+          <span class="badge ${a.isCorrect?'badge-success':'badge-danger'}">${a.isCorrect?'✓ Correct':'✗ Wrong'} (${a.marksAwarded}/${r.answers[i].marksAwarded === undefined ? 1 : a.marksAwarded} marks)</span>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('result-detail-content').innerHTML = `
+      <div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div><strong>Student:</strong> ${r.fullName} (${r.rollNumber})</div>
+        <div><strong>Score:</strong> ${r.totalMarks} / ${r.maxMarks} (${r.percentage}%)</div>
+        <div><strong>Submitted:</strong> ${new Date(r.submittedAt).toLocaleString()}</div>
+        <div><strong>Submission Type:</strong> ${r.submissionType}</div>
+        <div><strong>Tab Switches:</strong> ${r.tabSwitchCount} | <strong>FS Exits:</strong> ${r.fullscreenExitCount}</div>
+      </div>
+      <h4 style="margin-bottom:10px">Individual Answers</h4>
+      <div>${answersHtml || '<p class="text-muted">No answers recorded</p>'}</div>`;
+  } catch(e) {
+    document.getElementById('result-detail-content').innerHTML = '<p class="text-muted">Failed to load details</p>';
+  }
+}
+
+function closeResultModal() { document.getElementById('result-modal').classList.remove('active'); }
+
+async function exportResults() {
+  try {
+    const res = await fetch(API_BASE + '/export/results', {
+      headers: { 'Authorization': 'Bearer ' + adminToken }
+    });
+    if (!res.ok) { alert('Export failed. Please login again.'); return; }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'exam_results.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch(e) { alert('Export failed: ' + e.message); }
+}
+
+// ─── Students ─────────────────────────────────────
+async function loadStudents() {
+  try {
+    const res = await fetch(`${API_BASE}/students`, { headers: authHeaders() });
+    const data = await res.json();
+    const tbody = document.getElementById('students-tbody');
+
+    if (!data.students.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No students registered yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.students.map(s => `
+      <tr>
+        <td>${s.rollNumber}</td>
+        <td>${s.fullName}</td>
+        <td style="white-space:nowrap">${s.loginTime ? new Date(s.loginTime).toLocaleString() : '<span class="text-muted">—</span>'}</td>
+        <td style="white-space:nowrap">${s.examStartTime ? new Date(s.examStartTime).toLocaleString() : '<span class="text-muted">—</span>'}</td>
+        <td><span class="badge ${s.hasAttempted?'badge-success':'badge-warning'}">${s.hasAttempted?'Yes':'No'}</span></td>
+        <td style="white-space:nowrap">${new Date(s.createdAt).toLocaleString()}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteStudent('${s._id}', '${escapeHtml(s.rollNumber)}')">🗑</button></td>
+      </tr>`).join('');
+  } catch(e) { handleAuthError(e); }
+}
+
+async function exportStudents() {
+  try {
+    const res = await fetch(API_BASE + '/export/students', {
+      headers: { 'Authorization': 'Bearer ' + adminToken }
+    });
+    if (!res.ok) { alert('Export failed. Please login again.'); return; }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'student_data.xlsx';
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch(e) { alert('Export failed: ' + e.message); }
+}
+
+async function deleteStudent(id, roll) {
+  if (!confirm(`Delete student ${roll}? This will NOT delete their exam responses.`)) return;
+  try {
+    await fetch(`${API_BASE}/students/${id}`, { method: 'DELETE', headers: authHeaders() });
+    loadStudents();
+  } catch(e) {}
+}
+
+// ─── Utilities ─────────────────────────────────────
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(text || ''));
+  return d.innerHTML;
+}
+
+function handleAuthError(e) {
+  if (e?.status === 401) {
+    localStorage.removeItem('adminToken');
+    window.location.href = '/admin/login.html';
+  }
+}
+
+// ─── Init ─────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>

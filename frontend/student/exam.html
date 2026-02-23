@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam in Progress</title>
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    /* ── Exam Layout ── */
+    body { background: #edf0f5; user-select: none; }
+    .exam-header {
+      background: linear-gradient(135deg, #0f2447, #1a3a6b);
+      color: white;
+      padding: 0 24px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .exam-header .left { display: flex; align-items: center; gap: 14px; }
+    .exam-title-h { font-size: 1rem; font-weight: 700; color: white; }
+    .student-info-h { font-size: 0.82rem; opacity: 0.75; }
+
+    /* Timer */
+    .timer-box {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      transition: background 0.3s;
+    }
+    .timer-box.warning { background: rgba(231,76,60,0.4); border-color: rgba(231,76,60,0.6); animation: timerPulse 1s infinite; }
+    @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+    /* Progress */
+    .progress-bar-wrap { height: 4px; background: rgba(255,255,255,0.2); }
+    .progress-bar-fill { height: 100%; background: #c8a84b; transition: width 0.5s; }
+
+    /* Question Area */
+    .exam-body { max-width: 820px; margin: 0 auto; padding: 28px 20px 100px; }
+    .question-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 14px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .q-nav-btn {
+      width: 36px; height: 36px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: white;
+      color: var(--text);
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .q-nav-btn.answered { background: #1a7a4a; border-color: #1a7a4a; color: white; }
+    .q-nav-btn.current { border-color: #1a3a6b; background: #e8eef8; }
+
+    /* Question Card */
+    .question-card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .q-header {
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #eef;
+    }
+    .q-number {
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .q-text { font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.5; }
+    .q-marks { margin-left: auto; color: var(--accent); font-weight: 700; font-size: 0.88rem; white-space: nowrap; }
+
+    /* MCQ Options */
+    .options-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .option-item { display: flex; }
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.95rem;
+    }
+    .option-label:hover { border-color: var(--primary); background: #f0f4fb; }
+    .option-label.selected { border-color: var(--primary); background: #e8eef8; }
+    .option-radio { display: none; }
+    .option-dot {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .option-label.selected .option-dot {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+    .option-label.selected .option-dot::after {
+      content: '';
+      width: 6px; height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    /* Fill blank */
+    .fill-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: var(--font);
+      transition: border-color 0.2s;
+    }
+    .fill-input:focus { outline: none; border-color: var(--primary); }
+
+    /* Navigation Buttons */
+    .q-nav-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    /* Submit bar */
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 2px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    }
+    .answered-count { font-size: 0.9rem; color: var(--text-muted); }
+    .answered-count strong { color: var(--primary); font-size: 1.1rem; }
+
+    /* Overlay Modals */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,20,40,0.75);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .overlay.show { display: flex; }
+    .overlay-box {
+      background: white;
+      border-radius: 18px;
+      padding: 36px;
+      max-width: 460px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .overlay-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+    .overlay-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 10px; }
+    .overlay-msg { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+    .overlay-warning { border-top: 5px solid var(--warning); }
+    .overlay-danger { border-top: 5px solid var(--danger); }
+    .overlay-success { border-top: 5px solid var(--success); }
+
+    /* Submitted screen */
+    .submitted-screen { display: none; position: fixed; inset: 0; background: #f0f2f5; z-index: 99999; align-items: center; justify-content: center; }
+    .submitted-screen.show { display: flex; }
+    .submitted-box { text-align: center; max-width: 460px; padding: 20px; }
+    .submitted-box .big-icon { font-size: 5rem; margin-bottom: 20px; display: block; animation: popIn 0.5s ease; }
+    @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+    .submitted-box h2 { font-size: 1.8rem; color: var(--success); margin-bottom: 12px; }
+    .submitted-box p { color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; }
+    .submission-detail { background: #edf8f2; border: 1px solid #a8d5ba; border-radius: 10px; padding: 14px 20px; margin: 20px 0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<!-- Exam Header -->
+<div class="exam-header">
+  <div class="left">
+    <span style="font-size:1.4rem">📋</span>
+    <div>
+      <div class="exam-title-h" id="exam-title-h">Online Examination</div>
+      <div class="student-info-h" id="student-info-h">Loading...</div>
+    </div>
+  </div>
+  <div class="timer-box" id="timer-display">
+    <span>⏱</span>
+    <span id="timer-text">30:00</span>
+  </div>
+</div>
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+</div>
+
+<!-- Main Exam Body -->
+<div class="exam-body">
+  <div id="loading-screen" class="text-center" style="padding-top:60px">
+    <div class="spinner" style="width:50px;height:50px;border-width:4px;margin-bottom:16px"></div>
+    <p>Loading exam questions...</p>
+  </div>
+
+  <div id="exam-content" style="display:none">
+    <!-- Question navigation dots -->
+    <div class="question-nav" id="q-nav"></div>
+    <!-- Question display area -->
+    <div id="question-display"></div>
+    <!-- Navigation buttons -->
+    <div class="q-nav-actions">
+      <button class="btn btn-outline" id="btn-prev" onclick="navigate(-1)" disabled>← Previous</button>
+      <button class="btn btn-primary" id="btn-next" onclick="navigate(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit bar -->
+<div class="submit-bar" id="submit-bar" style="display:none">
+  <div class="answered-count">
+    Answered: <strong id="answered-count">0</strong> / <span id="total-count">0</span>
+  </div>
+  <button class="btn btn-success btn-lg" onclick="showSubmitConfirm()">✔ Submit Exam</button>
+</div>
+
+<!-- WARNING: Tab Switch (First) -->
+<div class="overlay overlay-warning" id="tab-warning-overlay">
+  <div class="overlay-box">
+    <span class="overlay-icon">⚠️</span>
+    <div class="overlay-title">Tab Switch Detected!</div>
+    <p class="overlay-msg">You switched away from this exam tab. <strong>This is your first and final warning.</strong><br><br>If you switch tabs again, your exam will be <strong>automatically submitted immediately</strong>.</p>
+    <button class="btn btn-warning btn-full" style="background:#e67e22;color:white" onclick="dismissTabWarning()">I Understand — Return to Exam</button>
+  </div>
+</div>
+
+<!-- WARNING: Fullscreen Exit (First) -->
+<div class="overlay overlay-warning" id="fs-warning-overlay">
+  <div class="overlay-box">
+    <span class="overlay-icon">🖥️</span>
+    <div class="overlay-title">Fullscreen Exited!</div>
+    <p class="overlay-msg">You exited full-screen mode. <strong>This is your first and final warning.</strong><br><br>If you exit full-screen again, your exam will be <strong>automatically submitted</strong>.</p>
+    <button class="btn btn-warning btn-full" style="background:#e67e22;color:white" onclick="dismissFsWarning()">Re-enable Fullscreen & Continue</button>
+  </div>
+</div>
+
+<!-- Auto-submit overlay -->
+<div class="overlay overlay-danger" id="autosubmit-overlay">
+  <div class="overlay-box">
+    <span class="overlay-icon">🚨</span>
+    <div class="overlay-title" id="autosubmit-title">Exam Being Submitted</div>
+    <p class="overlay-msg" id="autosubmit-msg">A violation was detected. Your exam is being submitted automatically.</p>
+    <div class="spinner" style="margin:0 auto"></div>
+  </div>
+</div>
+
+<!-- Submit Confirm -->
+<div class="overlay" id="submit-confirm-overlay">
+  <div class="overlay-box">
+    <span class="overlay-icon">📤</span>
+    <div class="overlay-title">Submit Exam?</div>
+    <p class="overlay-msg" id="submit-confirm-msg">Are you sure you want to submit? This action cannot be undone.</p>
+    <div class="flex-gap" style="justify-content:center">
+      <button class="btn btn-outline" onclick="hideSubmitConfirm()">Cancel</button>
+      <button class="btn btn-success" onclick="submitExam('manual')">✔ Yes, Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submitted Screen -->
+<div class="submitted-screen" id="submitted-screen">
+  <div class="submitted-box">
+    <span class="big-icon">✅</span>
+    <h2>Exam Submitted!</h2>
+    <p>Your response has been recorded.</p>
+    <div class="submission-detail">
+      <div><strong>Student:</strong> <span id="sub-name"></span></div>
+      <div><strong>Roll Number:</strong> <span id="sub-roll"></span></div>
+      <div><strong>Submitted:</strong> <span id="sub-time"></span></div>
+    </div>
+    <p class="text-muted" style="font-size:0.9rem">You may close this tab. Results will be communicated by your administrator.</p>
+  </div>
+</div>
+
+<script>
+  // ═══════════════════════════════════════════════════
+  //  SECURITY: Disable All Shortcuts & Right-Click
+  // ═══════════════════════════════════════════════════
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    const blocked = ['F12','F5'];
+    const ctrlBlocked = ['c','v','u','a','s','p','j','i','f'];
+    if (blocked.includes(e.key)) { e.preventDefault(); return false; }
+    if (e.ctrlKey || e.metaKey) {
+      if (ctrlBlocked.includes(e.key.toLowerCase())) { e.preventDefault(); return false; }
+      if (e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())) { e.preventDefault(); return false; }
+    }
+    if (e.altKey && e.key === 'F4') { e.preventDefault(); return false; }
+  });
+  document.addEventListener('copy', e => e.preventDefault());
+  document.addEventListener('cut', e => e.preventDefault());
+  document.addEventListener('paste', e => e.preventDefault());
+
+  // Prevent page refresh
+  window.addEventListener('beforeunload', e => {
+    if (!examSubmitted) {
+      e.preventDefault();
+      e.returnValue = 'Your exam is in progress. Are you sure you want to leave?';
+    }
+  });
+
+  // Prevent back navigation
+  history.pushState(null, '', window.location.href);
+  window.addEventListener('popstate', () => {
+    if (!examSubmitted) {
+      history.pushState(null, '', window.location.href);
+    }
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  EXAM STATE
+  // ═══════════════════════════════════════════════════
+  const token = sessionStorage.getItem('examToken');
+  const settings = JSON.parse(sessionStorage.getItem('examSettings') || '{}');
+  const student = JSON.parse(sessionStorage.getItem('studentInfo') || '{}');
+
+  if (!token) { window.location.href = '/student/login.html'; }
+
+  let questions = [];
+  let answers = {};   // questionId -> givenAnswer
+  let currentIndex = 0;
+  let timerInterval = null;
+  let timeLeft = (settings.duration || 30) * 60;
+  let examSubmitted = false;
+  let tabSwitchCount = 0;
+  let fullscreenExitCount = 0;
+  let tabWarned = false;
+  let fsWarned = false;
+
+  // Populate header
+  document.getElementById('exam-title-h').textContent = settings.examTitle || 'Online Examination';
+  document.getElementById('student-info-h').textContent = `${student.fullName || ''} | Roll: ${student.rollNumber || ''}`;
+
+  // ─── Load Questions ───────────────────────────────
+  async function loadQuestions() {
+    try {
+      const res = await fetch('/api/exam/questions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        if (data.message.includes('already submitted')) {
+          showSubmittedScreen('manual');
+        } else {
+          alert(data.message || 'Error loading exam');
+          window.location.href = '/student/login.html';
+        }
+        return;
+      }
+
+      questions = data.questions;
+      document.getElementById('loading-screen').style.display = 'none';
+      document.getElementById('exam-content').style.display = '';
+      document.getElementById('submit-bar').style.display = 'flex';
+      document.getElementById('total-count').textContent = questions.length;
+
+      buildNavDots();
+      renderQuestion(0);
+      startTimer();
+
+    } catch (err) {
+      alert('Failed to load questions. Please check connection.');
+    }
+  }
+
+  // ─── Build Navigation Dots ─────────────────────────
+  function buildNavDots() {
+    const nav = document.getElementById('q-nav');
+    nav.innerHTML = '';
+    questions.forEach((q, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'q-nav-btn' + (i === 0 ? ' current' : '');
+      btn.textContent = i + 1;
+      btn.onclick = () => goToQuestion(i);
+      btn.id = `nav-btn-${i}`;
+      nav.appendChild(btn);
+    });
+  }
+
+  function updateNavDots() {
+    questions.forEach((q, i) => {
+      const btn = document.getElementById(`nav-btn-${i}`);
+      if (!btn) return;
+      btn.className = 'q-nav-btn';
+      if (answers[q._id] !== undefined && answers[q._id] !== '') btn.classList.add('answered');
+      if (i === currentIndex) btn.classList.add('current');
+    });
+    updateAnsweredCount();
+  }
+
+  function updateAnsweredCount() {
+    const count = Object.values(answers).filter(v => v !== '' && v !== undefined).length;
+    document.getElementById('answered-count').textContent = count;
+    const pct = questions.length > 0 ? (count / questions.length * 100) : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  }
+
+  // ─── Render Question ───────────────────────────────
+  function renderQuestion(index) {
+    if (index < 0 || index >= questions.length) return;
+    currentIndex = index;
+    const q = questions[index];
+    const container = document.getElementById('question-display');
+
+    let bodyHtml = '';
+    if (q.questionType === 'mcq') {
+      const opts = q.options.map((opt, i) => {
+        const isSelected = answers[q._id] == i.toString();
+        return `
+          <li class="option-item">
+            <label class="option-label${isSelected ? ' selected' : ''}" id="opt-label-${i}">
+              <input type="radio" class="option-radio" name="q${q._id}" value="${i}" ${isSelected ? 'checked' : ''} onchange="selectOption('${q._id}', '${i}')">
+              <span class="option-dot"></span>
+              <span>${opt}</span>
+            </label>
+          </li>`;
+      }).join('');
+      bodyHtml = `<ul class="options-list">${opts}</ul>`;
+    } else if (q.questionType === 'fill') {
+      const val = answers[q._id] || '';
+      bodyHtml = `<input type="text" class="fill-input" placeholder="Type your answer here..." value="${escapeHtml(val)}" oninput="setFillAnswer('${q._id}', this.value)" autocomplete="off" spellcheck="false">`;
+    }
+
+    container.innerHTML = `
+      <div class="question-card">
+        <div class="q-header">
+          <span class="q-number">Q ${index + 1} of ${questions.length}</span>
+          <span class="q-text">${escapeHtml(q.questionText)}</span>
+          <span class="q-marks">[${q.marks} mark${q.marks > 1 ? 's' : ''}]</span>
+        </div>
+        <div class="q-body">${bodyHtml}</div>
+      </div>`;
+
+    document.getElementById('btn-prev').disabled = (index === 0);
+    document.getElementById('btn-next').textContent = index === questions.length - 1 ? 'Review & Submit →' : 'Next →';
+    if (index === questions.length - 1) {
+      document.getElementById('btn-next').onclick = showSubmitConfirm;
+    } else {
+      document.getElementById('btn-next').onclick = () => navigate(1);
+    }
+
+    updateNavDots();
+  }
+
+  function selectOption(qId, value) {
+    answers[qId] = value;
+    // Update labels
+    document.querySelectorAll(`[name="q${qId}"]`).forEach((radio, i) => {
+      const label = radio.parentElement;
+      label.classList.toggle('selected', radio.value === value);
+    });
+    updateNavDots();
+  }
+
+  function setFillAnswer(qId, value) {
+    answers[qId] = value.trim();
+    updateNavDots();
+  }
+
+  function navigate(dir) {
+    goToQuestion(currentIndex + dir);
+  }
+
+  function goToQuestion(i) {
+    if (i >= 0 && i < questions.length) {
+      renderQuestion(i);
+    }
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(text));
+    return d.innerHTML;
+  }
+
+  // ─── Timer ────────────────────────────────────────
+  function startTimer() {
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        autoSubmit('auto_timer', 'Time is up! Your exam has been submitted automatically.');
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    document.getElementById('timer-text').textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    const timerBox = document.getElementById('timer-display');
+    if (timeLeft <= 300) { timerBox.classList.add('warning'); }
+    else { timerBox.classList.remove('warning'); }
+  }
+
+  // ─── Tab Visibility ───────────────────────────────
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !examSubmitted) {
+      tabSwitchCount++;
+      if (tabSwitchCount === 1) {
+        document.getElementById('tab-warning-overlay').classList.add('show');
+      } else {
+        autoSubmit('auto_tab_switch', 'You switched tabs a second time. Your exam has been auto-submitted.');
+      }
+    }
+  });
+
+  function dismissTabWarning() {
+    document.getElementById('tab-warning-overlay').classList.remove('show');
+    tabWarned = true;
+  }
+
+  // ─── Fullscreen Detection ─────────────────────────
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  document.addEventListener('mozfullscreenchange', onFsChange);
+  document.addEventListener('MSFullscreenChange', onFsChange);
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+              document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  // Only start monitoring fullscreen AFTER exam loads (not on page load)
+  let fullscreenMonitoringActive = false;
+  setTimeout(() => { fullscreenMonitoringActive = true; }, 3000);
+
+  function onFsChange() {
+    if (examSubmitted) return;
+    if (!fullscreenMonitoringActive) return; // ignore initial state
+    if (!isFullscreen()) {
+      fullscreenExitCount++;
+      if (fullscreenExitCount === 1) {
+        document.getElementById('fs-warning-overlay').classList.add('show');
+      } else {
+        autoSubmit('auto_fullscreen', 'You exited full-screen a second time. Your exam has been auto-submitted.');
+      }
+    }
+  }
+
+  function dismissFsWarning() {
+    document.getElementById('fs-warning-overlay').classList.remove('show');
+    // Try to re-enter fullscreen
+    const el = document.documentElement;
+    const fsReq = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (fsReq) fsReq.call(el).catch(() => {});
+    fsWarned = true;
+  }
+
+  // ─── Submit Functions ─────────────────────────────
+  function showSubmitConfirm() {
+    const answered = Object.values(answers).filter(v => v !== '' && v !== undefined).length;
+    const unanswered = questions.length - answered;
+    document.getElementById('submit-confirm-msg').textContent =
+      unanswered > 0
+        ? `You have ${unanswered} unanswered question(s). Are you sure you want to submit? This action cannot be undone.`
+        : 'All questions answered. Are you sure you want to submit?';
+    document.getElementById('submit-confirm-overlay').classList.add('show');
+  }
+
+  function hideSubmitConfirm() {
+    document.getElementById('submit-confirm-overlay').classList.remove('show');
+  }
+
+  function autoSubmit(type, message) {
+    if (examSubmitted) return;
+    document.getElementById('autosubmit-msg').textContent = message;
+    document.getElementById('autosubmit-overlay').classList.add('show');
+    setTimeout(() => submitExam(type), 1500);
+  }
+
+  async function submitExam(type) {
+    if (examSubmitted) return;
+    examSubmitted = true;
+    clearInterval(timerInterval);
+
+    // Build answers payload
+    const answersPayload = questions.map(q => ({
+      questionId: q._id,
+      givenAnswer: answers[q._id] !== undefined ? answers[q._id].toString() : ''
+    }));
+
+    try {
+      const res = await fetch('/api/exam/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          answers: answersPayload,
+          submissionType: type || 'manual',
+          tabSwitchCount,
+          fullscreenExitCount
+        })
+      });
+
+      const data = await res.json();
+      showSubmittedScreen(type);
+
+    } catch (err) {
+      // Even if network fails, mark as submitted to prevent re-tries
+      showSubmittedScreen(type);
+    }
+  }
+
+  function showSubmittedScreen(type) {
+    // Hide all overlays
+    document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
+    // Show submitted screen
+    const screen = document.getElementById('submitted-screen');
+    screen.classList.add('show');
+    document.getElementById('sub-name').textContent = student.fullName || '';
+    document.getElementById('sub-roll').textContent = student.rollNumber || '';
+    document.getElementById('sub-time').textContent = new Date().toLocaleString();
+    // Clear session
+    sessionStorage.clear();
+  }
+
+  // ─── Init ─────────────────────────────────────────
+  loadQuestions();
+</script>
+</body>
+</html>

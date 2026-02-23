@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — Exam System</title>
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    body {
+      background: linear-gradient(160deg, #1c1c2e 0%, #0f2447 60%, #1a3a6b 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: white;
+      border-radius: 20px;
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+    .admin-badge {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .admin-badge .icon {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #1a3a6b, #c8a84b);
+      border-radius: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(200,168,75,0.3);
+    }
+    .admin-badge h2 { color: #1a3a6b; }
+    .admin-badge p { color: #6b7a8d; font-size: 0.88rem; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="admin-badge">
+      <div class="icon">🛡</div>
+      <h2>Admin Panel</h2>
+      <p>Exam Management System</p>
+    </div>
+
+    <div id="alert-box" class="alert hidden"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" class="form-control" placeholder="admin" autocomplete="off" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
+        🔐 Login to Admin Panel
+      </button>
+    </form>
+  </div>
+
+<script>
+  // Already logged in?
+  if (localStorage.getItem('adminToken')) {
+    window.location.href = '/admin/dashboard.html';
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        window.location.href = '/admin/dashboard.html';
+      } else {
+        showAlert(data.message || 'Invalid credentials', 'error');
+        btn.disabled = false;
+        btn.textContent = '🔐 Login to Admin Panel';
+      }
+    } catch (err) {
+      showAlert('Server connection error', 'error');
+      btn.disabled = false;
+      btn.textContent = '🔐 Login to Admin Panel';
+    }
+  });
+
+  function showAlert(msg, type) {
+    const box = document.getElementById('alert-box');
+    box.className = `alert alert-${type}`;
+    box.textContent = msg;
+    box.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

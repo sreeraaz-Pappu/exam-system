@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Login — Exam System</title>
+  <link rel="stylesheet" href="/shared/styles.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0f2447 0%, #1a3a6b 50%, #2d5fa8 100%);
+    }
+    .login-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      background: white;
+      border-radius: 20px;
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .login-logo .icon-wrap {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #1a3a6b, #2d5fa8);
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(26,58,107,0.3);
+    }
+    .login-logo h2 { font-size: 1.5rem; color: #1a3a6b; }
+    .login-logo p { color: #6b7a8d; font-size: 0.88rem; margin-top: 4px; }
+    .footer-bar {
+      text-align: center;
+      padding: 16px;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.82rem;
+    }
+    .important-note {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.84rem;
+      color: #5d4037;
+      margin-bottom: 20px;
+    }
+    .important-note strong { color: #e65100; }
+  </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="icon-wrap">📋</div>
+      <h2>Online Examination</h2>
+      <p>Student Login Portal</p>
+    </div>
+
+    <div class="important-note">
+      <strong>⚠ Important:</strong> Enter your details exactly as registered. Only one attempt is permitted.
+    </div>
+
+    <div id="alert-box" class="alert hidden"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="rollNumber">Roll Number</label>
+        <input type="text" id="rollNumber" class="form-control" placeholder="e.g. CS2024001" autocomplete="off" spellcheck="false" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fullName">Full Name</label>
+        <input type="text" id="fullName" class="form-control" placeholder="As per your records" autocomplete="off" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-btn">
+        <span>Proceed to Exam</span>
+        <span>→</span>
+      </button>
+    </form>
+
+    <p class="text-muted text-center mt-2">Having trouble? Contact your exam administrator.</p>
+  </div>
+</div>
+
+<div class="footer-bar">© Exam System. Secure Online Examination Platform.</div>
+
+<script>
+  const API = '';  // Same origin
+
+  // Disable right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const alertBox = document.getElementById('alert-box');
+
+    const rollNumber = document.getElementById('rollNumber').value.trim();
+    const fullName = document.getElementById('fullName').value.trim();
+
+    if (!rollNumber || !fullName) {
+      showAlert('Please fill in all fields.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px"></span> Verifying...';
+
+    try {
+      const res = await fetch(`${API}/api/student/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rollNumber, fullName })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        sessionStorage.setItem('examToken', data.token);
+        sessionStorage.setItem('examSettings', JSON.stringify(data.examSettings));
+        sessionStorage.setItem('studentInfo', JSON.stringify(data.student));
+        showAlert('Login successful! Redirecting...', 'success');
+        setTimeout(() => { window.location.href = '/student/instructions.html'; }, 1000);
+      } else {
+        showAlert(data.message || 'Login failed.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Proceed to Exam</span><span>→</span>';
+      }
+    } catch (err) {
+      showAlert('Cannot connect to server. Please check your connection.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<span>Proceed to Exam</span><span>→</span>';
+    }
+  });
+
+  function showAlert(msg, type) {
+    const box = document.getElementById('alert-box');
+    box.className = `alert alert-${type}`;
+    box.textContent = msg;
+    box.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>
