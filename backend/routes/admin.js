@@ -181,6 +181,25 @@ router.delete('/students/:id', verifyAdmin, async (req, res) => {
   }
 });
 
+// ─── DELETE RESPONSE ────────────────────────────────────────────────────────
+router.delete('/results/:id', verifyAdmin, async (req, res) => {
+  try {
+    const response = await Response.findById(req.params.id);
+    if (!response) return res.status(404).json({ success: false, message: 'Response not found' });
+
+    // Reset student hasAttempted flag so they can retake
+    await Student.findOneAndUpdate(
+      { rollNumber: response.rollNumber },
+      { hasAttempted: false, examStartTime: null }
+    );
+
+    await Response.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Response deleted. Student can now retake the exam.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
 router.get('/dashboard', verifyAdmin, async (req, res) => {
   try {

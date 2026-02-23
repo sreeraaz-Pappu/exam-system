@@ -649,7 +649,12 @@ async function loadResults() {
         <td><span class="badge ${r.submissionType==='manual'?'badge-success':'badge-danger'}">${r.submissionType.replace('_',' ')}</span></td>
         <td>${r.tabSwitchCount}</td>
         <td>${r.fullscreenExitCount}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="showResultDetail('${r._id}')">View</button></td>
+        <td>
+          <div class="flex-gap">
+            <button class="btn btn-outline btn-sm" onclick="showResultDetail('${r._id}')">View</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteResult('${r._id}', '${r.rollNumber}')">🗑 Reset</button>
+          </div>
+        </td>
       </tr>`).join('');
   } catch(e) { handleAuthError(e); }
 }
@@ -687,6 +692,25 @@ async function showResultDetail(id) {
 }
 
 function closeResultModal() { document.getElementById('result-modal').classList.remove('active'); }
+
+async function deleteResult(id, rollNumber) {
+  if (!confirm(`Delete response for ${rollNumber}?\n\nThis will:\n✓ Remove their exam response\n✓ Allow them to retake the exam\n\nAre you sure?`)) return;
+  try {
+    const res = await fetch(API_BASE + '/results/' + id, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('✅ ' + data.message);
+      loadResults();
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch(e) {
+    alert('Server error: ' + e.message);
+  }
+}
 
 async function exportResults() {
   try {
