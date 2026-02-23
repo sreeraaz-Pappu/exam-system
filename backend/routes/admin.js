@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const { verifyAdmin } = require('../middleware/auth');
 const Question = require('../models/Question');
 const Response = require('../models/Response');
@@ -122,21 +122,16 @@ router.get('/export/results', verifyAdmin, async (req, res) => {
       'Time Taken (sec)': r.timeTakenSeconds || ''
     }));
 
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(data);
-
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 6 }, { wch: 14 }, { wch: 20 }, { wch: 12 }, { wch: 10 },
-      { wch: 14 }, { wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 16 }
-    ];
-
-    xlsx.utils.book_append_sheet(wb, ws, 'Results');
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Results');
+    if (data.length > 0) {
+      ws.columns = Object.keys(data[0]).map(k => ({ header: k, key: k, width: 20 }));
+      data.forEach(row => ws.addRow(row));
+    }
     res.setHeader('Content-Disposition', 'attachment; filename=exam_results.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
+    await wb.xlsx.write(res);
+    res.end();
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -156,15 +151,16 @@ router.get('/export/students', verifyAdmin, async (req, res) => {
       'Registered At': new Date(s.createdAt).toLocaleString()
     }));
 
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(data);
-    ws['!cols'] = [{ wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 22 }];
-    xlsx.utils.book_append_sheet(wb, ws, 'Students');
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Students');
+    if (data.length > 0) {
+      ws.columns = Object.keys(data[0]).map(k => ({ header: k, key: k, width: 22 }));
+      data.forEach(row => ws.addRow(row));
+    }
     res.setHeader('Content-Disposition', 'attachment; filename=student_data.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
+    await wb.xlsx.write(res);
+    res.end();
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

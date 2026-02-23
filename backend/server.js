@@ -9,7 +9,10 @@ const connectDB = require('./config/db');
 const app = express();
 
 // ─── Connect Database ──────────────────────────────────────────────────────
-connectDB();
+connectDB().catch(err => {
+  console.error('DB Connection failed:', err.message);
+  // Don't exit - keep server running so frontend still loads
+});
 
 // ─── Security Middleware ────────────────────────────────────────────────────
 app.use(helmet({
@@ -52,10 +55,12 @@ app.use('/student', express.static(path.join(__dirname, '../frontend/student')))
 app.use('/admin', express.static(path.join(__dirname, '../frontend/admin')));
 app.use('/shared', express.static(path.join(__dirname, '../frontend/shared')));
 
-// Root redirect
-app.get('/', (req, res) => {
-  res.redirect('/student/login.html');
-});
+// Directory redirects
+app.get('/', (req, res) => res.redirect('/student/login.html'));
+app.get('/student', (req, res) => res.redirect('/student/login.html'));
+app.get('/student/', (req, res) => res.redirect('/student/login.html'));
+app.get('/admin', (req, res) => res.redirect('/admin/login.html'));
+app.get('/admin/', (req, res) => res.redirect('/admin/login.html'));
 
 // 404 handler
 app.use((req, res) => {
