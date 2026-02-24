@@ -8,81 +8,67 @@ const connectDB = require('./config/db');
 
 const app = express();
 
-// ─── Connect Database ──────────────────────────────────────────────────────
-connectDB().catch(err => {
-  console.error('DB Connection failed:', err.message);
-  // Don't exit - keep server running so frontend still loads
-});
+connectDB().catch(err => console.error('DB Connection failed:', err.message));
 
-// ─── Security Middleware ────────────────────────────────────────────────────
-app.use(helmet({
-  contentSecurityPolicy: false, // Configured separately for frontend serving
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: { success: false, message: 'Too many requests, please try again later.' }
-});
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { success: false, message: 'Too many login attempts, please try again in 15 minutes.' }
-});
+const limiter = rateLimit({ windowMs: 15*60*1000, max: 100, message: { success: false, message: 'Too many requests.' } });
+const loginLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, message: { success: false, message: 'Too many login attempts.' } });
 
 app.use('/api/', limiter);
-app.use('/api/student/login', loginLimiter);
+app.use('/api/student', loginLimiter);
 app.use('/api/admin/login', loginLimiter);
 
-// ─── Body Parsing ──────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ─── API Routes ────────────────────────────────────────────────────────────
+// API Routes
 app.use('/api/student', require('./routes/studentAuth'));
 app.use('/api/exam', require('./routes/exam'));
 app.use('/api/admin', require('./routes/admin'));
 
-// ─── Serve Static Frontend ─────────────────────────────────────────────────
-app.use('/student', express.static(path.join(__dirname, '../frontend/student')));
-app.use('/admin', express.static(path.join(__dirname, '../frontend/admin')));
+// Static files
 app.use('/shared', express.static(path.join(__dirname, '../frontend/shared')));
+app.use('/admin', express.static(path.join(__dirname, '../frontend/admin')));
 
-// Directory redirects
-app.get('/', (req, res) => res.redirect('/student/login.html'));
-app.get('/student', (req, res) => res.redirect('/student/login.html'));
-app.get('/student/', (req, res) => res.redirect('/student/login.html'));
+// Dynamic exam routes - /exam/:examCode/* serves student files
+app.use('/exam', express.static(path.join(__dirname, '../frontend/student')));
+
+// Redirects
+app.get('/', (req, res) => res.redirect('/admin/login.html'));
 app.get('/admin', (req, res) => res.redirect('/admin/login.html'));
 app.get('/admin/', (req, res) => res.redirect('/admin/login.html'));
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+// Dynamic exam entry point
+app.get('/exam/:examCode', (req, res) => res.redirect(`/exam/${req.params.examCode}/login.html`));
+app.get('/exam/:examCode/', (req, res) => res.redirect(`/exam/${req.params.examCode}/login.html`));
+app.get('/exam/:examCode/login', (req, res) => res.redirect(`/exam/${req.params.examCode}/login.html`));
+app.get('/exam/:examCode/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/student/login.html'));
+});
+app.get('/exam/:examCode/instructions.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/student/instructions.html'));
+});
+app.get('/exam/:examCode/exam.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/student/exam.html'));
 });
 
-// Global error handler
+app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-// ─── Start Server ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`
-  ╔══════════════════════════════════════╗
-  ║   EXAM SYSTEM SERVER RUNNING         ║
-  ║   Port: ${PORT}                          ║
-  ║   Student: http://localhost:${PORT}/student ║
-  ║   Admin:   http://localhost:${PORT}/admin  ║
-  ╚══════════════════════════════════════╝
+  ╔══════════════════════════════════════════════╗
+  ║   EXAM SYSTEM SERVER RUNNING                 ║
+  ║   Port: ${PORT}                                  ║
+  ║   Admin: http://localhost:${PORT}/admin/login.html ║
+  ║   Exam:  http://localhost:${PORT}/exam/:code/login ║
+  ╚══════════════════════════════════════════════╝
   `);
 });
 

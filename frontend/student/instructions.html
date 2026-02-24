@@ -4,214 +4,171 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exam Instructions</title>
-  <link rel="stylesheet" href="/shared/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { background: var(--bg); min-height: 100vh; }
-    .container { max-width: 700px; margin: 0 auto; padding: 30px 20px; }
-    .instruction-list li {
-      padding: 8px 0;
-      border-bottom: 1px solid #eef;
-      font-size: 0.95rem;
-      display: flex;
-      gap: 10px;
-    }
-    .instruction-list li:last-child { border-bottom: none; }
-    .rule-icon { font-size: 1.1rem; flex-shrink: 0; width: 24px; text-align: center; }
-    .student-badge {
-      background: linear-gradient(135deg, #1a3a6b, #2d5fa8);
-      color: white;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .student-badge .avatar {
-      width: 46px; height: 46px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem;
-      flex-shrink: 0;
-    }
-    .confirm-check { display: flex; gap: 10px; align-items: flex-start; padding: 14px 0; }
-    .confirm-check input { width: 18px; height: 18px; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
-    .confirm-check label { font-size: 0.92rem; cursor: pointer; }
-    #fullscreen-warning {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 16px;
-      font-size: 0.9rem;
-      color: #664d03;
-    }
+    :root{--bg:#0d0f17;--surface:#13151f;--surface2:#1a1d2e;--border:#2a2d3e;--text:#e2e4f0;--text-muted:#6b7099;--accent:#4f6ef7;--warning:#ecc94b;--radius:8px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:30px 20px}
+    .container{max-width:700px;margin:0 auto}
+    .header{text-align:center;margin-bottom:30px}
+    .header .icon{font-size:2.5rem;margin-bottom:12px}
+    .header h1{font-size:1.6rem;margin-bottom:6px}
+    .header p{color:var(--text-muted);font-size:.9rem}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:18px}
+    .card h3{font-size:1rem;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}
+    .info-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+    .info-item .label{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .info-item .value{font-size:1rem;font-weight:700;color:var(--text)}
+    .rules-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+    .rules-list li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--text-muted);line-height:1.5}
+    .rules-list li span:first-child{font-size:1rem;flex-shrink:0;margin-top:1px}
+    .custom-instructions{font-size:14px;line-height:1.7;color:var(--text-muted)}
+    .confirm-row{display:flex;align-items:flex-start;gap:12px;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)}
+    .confirm-row input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--accent)}
+    .confirm-row label{font-size:13px;color:var(--text-muted);cursor:pointer;line-height:1.5}
+    .btn{width:100%;padding:14px;background:var(--accent);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:14px}
+    .btn:hover:not(:disabled){background:#3d5ce6;transform:translateY(-1px)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .warn-badge{background:rgba(236,201,75,.1);border:1px solid rgba(236,201,75,.25);color:var(--warning);padding:10px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;margin-bottom:14px}
+    /* Fullscreen blocked overlay */
+    #fs-blocked{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center}
+    #fs-blocked.show{display:flex}
+    .fs-blocked-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:36px;max-width:440px;width:90%;text-align:center}
+    .fs-blocked-box .icon{font-size:2.5rem;margin-bottom:14px}
+    .fs-blocked-box h3{margin-bottom:10px}
+    .fs-blocked-box p{color:var(--text-muted);font-size:.9rem;margin-bottom:20px}
+    .fs-blocked-box .warn{color:var(--warning);font-size:.82rem;font-weight:500;margin-bottom:18px}
   </style>
 </head>
 <body>
-
-<div class="page-header">
-  <div class="logo-icon">📋</div>
-  <div>
-    <h1 id="exam-title">Online Examination</h1>
-    <div class="subtitle">Exam Instructions</div>
-  </div>
-</div>
-
-<!-- Fullscreen Blocked Popup -->
-<div id="fs-blocked-overlay" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,0.85);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-  <div style="background:white;border-radius:18px;padding:36px;max-width:440px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);border-top:5px solid #e67e22;">
-    <div style="font-size:3rem;margin-bottom:14px">🖥️</div>
-    <h3 style="color:#1a3a6b;margin-bottom:10px;font-size:1.3rem">Fullscreen Required</h3>
-    <p style="color:#6b7a8d;margin-bottom:8px;font-size:0.95rem">Your browser blocked automatic fullscreen. You must allow fullscreen to continue the exam.</p>
-    <p style="color:#e67e22;font-weight:600;margin-bottom:20px;font-size:0.9rem">⚠ Click the button below and then click "Allow" if your browser asks for permission.</p>
-    <button onclick="retryFullscreen()" style="background:#1a3a6b;color:white;border:none;border-radius:10px;padding:13px 30px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;font-family:inherit;">
-      🚀 Enable Fullscreen & Start Exam
-    </button>
+<div id="fs-blocked">
+  <div class="fs-blocked-box">
+    <div class="icon">🖥️</div>
+    <h3>Fullscreen Required</h3>
+    <p>Your browser blocked fullscreen. Please click below and allow fullscreen to start the exam.</p>
+    <p class="warn">⚠ Fullscreen is required to begin.</p>
+    <button class="btn" style="margin-top:0" onclick="retryFS()">🚀 Enable Fullscreen & Start</button>
   </div>
 </div>
 
 <div class="container">
-
-  <div class="student-badge">
-    <div class="avatar">👤</div>
-    <div>
-      <div style="font-weight:700;font-size:1.05rem" id="student-name">Student</div>
-      <div style="opacity:0.8;font-size:0.88rem" id="student-roll">Roll Number</div>
-    </div>
-    <div style="margin-left:auto;text-align:right">
-      <div style="font-size:1.3rem;font-weight:700" id="exam-duration">30 min</div>
-      <div style="opacity:0.8;font-size:0.82rem">Duration</div>
-    </div>
-  </div>
-
-  <div class="card mb-3">
-    <h3 style="margin-bottom:14px;color:#c0392b">⚠ Strict Exam Rules — Please Read Carefully</h3>
-    <ul class="instruction-list" style="list-style:none;padding:0">
-      <li><span class="rule-icon">🖥</span><span>The exam must be taken in <strong>full-screen mode</strong>. You will be prompted to enable it.</span></li>
-      <li><span class="rule-icon">🚫</span><span><strong>Tab switching is prohibited.</strong> First violation: Warning. Second violation: Exam auto-submitted.</span></li>
-      <li><span class="rule-icon">🚫</span><span><strong>Exiting full-screen is prohibited.</strong> First violation: Warning. Second violation: Exam auto-submitted.</span></li>
-      <li><span class="rule-icon">🔒</span><span>Right-click, copy, paste, and all keyboard shortcuts (Ctrl+C, Ctrl+V, F12, etc.) are <strong>disabled</strong>.</span></li>
-      <li><span class="rule-icon">⏱</span><span>The exam will <strong>auto-submit</strong> when the timer expires.</span></li>
-      <li><span class="rule-icon">🔄</span><span><strong>No page refresh</strong> is allowed during the exam.</span></li>
-      <li><span class="rule-icon">⬅</span><span>The <strong>back button</strong> is disabled during the exam.</span></li>
-      <li><span class="rule-icon">1️⃣</span><span>Only <strong>one attempt</strong> is permitted. Once submitted, you cannot retake the exam.</span></li>
-      <li><span class="rule-icon">📊</span><span>Your score and results will <strong>not</strong> be shown. You will see only a confirmation message.</span></li>
-    </ul>
-  </div>
-
-  <div class="card mb-3" id="custom-instructions" style="display:none">
-    <h3 style="margin-bottom:10px">📌 Additional Instructions</h3>
-    <p id="instructions-text"></p>
-  </div>
-
-  <div id="fullscreen-warning" class="hidden">
-    📺 Click "Start Exam" below to enable full screen mode. The exam will start immediately after.
+  <div class="header">
+    <div class="icon">📋</div>
+    <h1 id="exam-title">Online Examination</h1>
+    <p id="student-info">Loading...</p>
   </div>
 
   <div class="card">
-    <div class="confirm-check">
-      <input type="checkbox" id="confirm-rules">
-      <label for="confirm-rules">I have read and understood all the exam rules. I agree to follow them and accept that violations may result in automatic submission of my exam.</label>
+    <h3>📊 Exam Information</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">Student</div>
+        <div class="value" id="info-name">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Roll Number</div>
+        <div class="value" id="info-roll">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Duration</div>
+        <div class="value" id="info-duration">—</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Exam Code</div>
+        <div class="value" id="info-code">—</div>
+      </div>
     </div>
-    <hr class="divider">
-    <button class="btn btn-primary btn-full btn-lg" id="start-btn" disabled onclick="startExam()">
-      🚀 Start Exam (Enable Full Screen)
-    </button>
+  </div>
+
+  <div class="card" id="custom-card" style="display:none">
+    <h3>📌 Additional Instructions</h3>
+    <div class="custom-instructions" id="custom-instructions"></div>
+  </div>
+
+  <div class="card">
+    <h3>⚠️ Exam Rules</h3>
+    <div class="warn-badge">⚠ Violations will result in automatic submission of your exam.</div>
+    <ul class="rules-list">
+      <li><span>🖥️</span><span>The exam will run in <strong>fullscreen mode</strong>. Exiting fullscreen is a violation.</span></li>
+      <li><span>🔒</span><span><strong>Tab switching</strong> is not allowed. A second violation will auto-submit your exam.</span></li>
+      <li><span>⏱️</span><span>The exam will <strong>auto-submit</strong> when the timer reaches zero.</span></li>
+      <li><span>🚫</span><span><strong>Copy, paste, and right-click</strong> are disabled during the exam.</span></li>
+      <li><span>🔄</span><span>Do not <strong>refresh or close</strong> the browser during the exam.</span></li>
+      <li><span>📵</span><span>You can only attempt this exam <strong>once</strong>.</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="confirm-row">
+      <input type="checkbox" id="agree-check" onchange="toggleBtn()">
+      <label for="agree-check">I have read and understood all the rules. I agree to follow them and accept that violations may result in automatic submission.</label>
+    </div>
+    <button class="btn" id="start-btn" disabled onclick="startExam()">🚀 Start Exam (Fullscreen)</button>
   </div>
 </div>
 
 <script>
-  // Guard: must be logged in
   const token = sessionStorage.getItem('examToken');
   const settings = JSON.parse(sessionStorage.getItem('examSettings') || '{}');
   const student = JSON.parse(sessionStorage.getItem('studentInfo') || '{}');
+  const examCode = sessionStorage.getItem('examCode') || '';
 
-  if (!token) { window.location.href = '/student/login.html'; }
+  if (!token) { window.location.href = window.location.pathname.replace('instructions.html','login.html'); }
 
-  // Populate page
   document.getElementById('exam-title').textContent = settings.examTitle || 'Online Examination';
-  document.getElementById('student-name').textContent = student.fullName || '';
-  document.getElementById('student-roll').textContent = 'Roll: ' + (student.rollNumber || '');
-  document.getElementById('exam-duration').textContent = (settings.duration || 30) + ' min';
+  document.getElementById('student-info').textContent = `${student.fullName || ''} · ${student.rollNumber || ''}`;
+  document.getElementById('info-name').textContent = student.fullName || '—';
+  document.getElementById('info-roll').textContent = student.rollNumber || '—';
+  document.getElementById('info-duration').textContent = (settings.duration || 30) + ' minutes';
+  document.getElementById('info-code').textContent = examCode || '—';
 
   if (settings.instructions) {
-    document.getElementById('custom-instructions').style.display = '';
-    document.getElementById('instructions-text').textContent = settings.instructions;
+    document.getElementById('custom-card').style.display = 'block';
+    document.getElementById('custom-instructions').textContent = settings.instructions;
   }
 
-  document.getElementById('fullscreen-warning').classList.remove('hidden');
-  document.getElementById('confirm-rules').addEventListener('change', function() {
-    document.getElementById('start-btn').disabled = !this.checked;
-  });
-
-  // Disable right-click
-  document.addEventListener('contextmenu', e => e.preventDefault());
-
-  function isFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
-              document.mozFullScreenElement || document.msFullscreenElement);
+  function toggleBtn() {
+    document.getElementById('start-btn').disabled = !document.getElementById('agree-check').checked;
   }
 
-  function goFullscreen() {
-    const el = document.documentElement;
-    const fsReq = el.requestFullscreen || el.webkitRequestFullscreen ||
-                  el.mozRequestFullScreen || el.msRequestFullscreen;
-    if (fsReq) {
-      return fsReq.call(el);
-    }
-    return Promise.resolve();
+  function goToExam() {
+    window.location.href = `/exam/${examCode}/exam.html`;
   }
 
   function startExam() {
     const btn = document.getElementById('start-btn');
     btn.disabled = true;
     btn.textContent = '⏳ Entering Fullscreen...';
-
-    // Try to enter fullscreen
-    const fsPromise = goFullscreen();
-
-    if (fsPromise && typeof fsPromise.then === 'function') {
-      fsPromise.then(() => {
-        // Successfully entered fullscreen
-        btn.textContent = '✅ Fullscreen Enabled! Loading Exam...';
-        setTimeout(() => { window.location.href = '/student/exam.html'; }, 500);
-      }).catch(() => {
-        // Browser blocked fullscreen — show retry popup
-        showFsBlockedPopup();
-        btn.disabled = false;
-        btn.textContent = '🚀 Start Exam (Enable Full Screen)';
-      });
-    } else {
-      // Old browser — proceed anyway
-      setTimeout(() => { window.location.href = '/student/exam.html'; }, 300);
-    }
-  }
-
-  function showFsBlockedPopup() {
-    document.getElementById('fs-blocked-overlay').style.display = 'flex';
-  }
-
-  function retryFullscreen() {
-    document.getElementById('fs-blocked-overlay').style.display = 'none';
-    const btn = document.getElementById('start-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Entering Fullscreen...';
-
-    const fsPromise = goFullscreen();
-    if (fsPromise && typeof fsPromise.then === 'function') {
-      fsPromise.then(() => {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) {
+      req.call(el).then(() => {
         btn.textContent = '✅ Loading Exam...';
-        setTimeout(() => { window.location.href = '/student/exam.html'; }, 500);
+        setTimeout(goToExam, 400);
       }).catch(() => {
-        // Still blocked — proceed anyway with warning
-        window.location.href = '/student/exam.html';
+        document.getElementById('fs-blocked').classList.add('show');
+        btn.disabled = false;
+        btn.textContent = '🚀 Start Exam (Fullscreen)';
       });
     } else {
-      window.location.href = '/student/exam.html';
+      goToExam();
     }
   }
+
+  function retryFS() {
+    document.getElementById('fs-blocked').classList.remove('show');
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) {
+      req.call(el).then(goToExam).catch(goToExam);
+    } else {
+      goToExam();
+    }
+  }
+
+  document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 </body>
 </html>

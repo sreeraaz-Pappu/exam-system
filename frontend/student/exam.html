@@ -250,7 +250,7 @@
   const token    = sessionStorage.getItem('examToken');
   const settings = JSON.parse(sessionStorage.getItem('examSettings') || '{}');
   const student  = JSON.parse(sessionStorage.getItem('studentInfo') || '{}');
-  if (!token) { window.location.href='/student/login.html'; }
+  if (!token) { const ec=sessionStorage.getItem('examCode')||''; window.location.href=ec?`/exam/${ec}/login.html`:'/admin/login.html'; }
 
   let questions=[], answers={}, currentIdx=0;
   let timerInterval=null, timeLeft=(settings.duration||30)*60;
@@ -303,7 +303,7 @@
       const data = await res.json();
       if (!data.success) {
         if (data.message.includes('already')) { showSubScreen(); return; }
-        alert(data.message); window.location.href='/student/login.html'; return;
+        alert(data.message); const ec=sessionStorage.getItem('examCode')||''; window.location.href=ec?`/exam/${ec}/login.html`:'/admin/login.html'; return;
       }
       questions = data.questions;
       document.getElementById('tot-count').textContent = questions.length;

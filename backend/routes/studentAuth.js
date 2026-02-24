@@ -1,69 +1,55 @@
 const express = require('express');
-const router = express.Router();
 const jwt = require('jsonwebtoken');
+const router = express.Router();
+const Exam = require('../models/Exam');
 const Student = require('../models/Student');
-const ExamSettings = require('../models/ExamSettings');
 
-// POST /api/student/login
-router.post('/login', async (req, res) => {
+// POST /api/student/:examCode/login
+router.post('/:examCode/login', async (req, res) => {
   try {
+    const { examCode } = req.params;
     const { rollNumber, fullName } = req.body;
 
-    if (!rollNumber || !fullName) {
-      return res.status(400).json({ success: false, message: 'Roll number and full name are required' });
-    }
+    if (!rollNumber || !fullName)
+      return res.status(400).json({ success: false, message: 'Roll number and full name are required.' });
+
+    const exam = await Exam.findOne({ examCode: examCode.toLowerCase() });
+    if (!exam)
+      return res.status(404).json({ success: false, message: 'Exam not found. Check your URL.' });
+    if (!exam.isActive)
+      return res.status(403).json({ success: false, message: 'This exam is not currently active. Contact your administrator.' });
 
     const roll = rollNumber.trim().toUpperCase();
     const name = fullName.trim();
 
-    // Find student by roll number
-    let student = await Student.findOne({ rollNumber: roll });
+    let student = await Student.findOne({ examId: exam._id, rollNumber: roll });
 
-    if (!student) {
-      // Auto-register on first login (or can be pre-registered by admin)
-      student = new Student({ rollNumber: roll, fullName: name });
+    if (student) {
+      if (student.hasAttempted)
+        return res.status(403).json({ success: false, message: 'You have already attempted this exam. Results will be shared by your administrator.' });
+      // Update name if changed
+      student.fullName = name;
+      student.loginTime = new Date();
+      await student.save();
     } else {
-      // Verify name matches
-      if (student.fullName.toLowerCase() !== name.toLowerCase()) {
-        return res.status(401).json({ success: false, message: 'Name does not match records for this Roll Number' });
-      }
+      student = await Student.create({ examId: exam._id, rollNumber: roll, fullName: name, loginTime: new Date() });
     }
 
-    // Check if already attempted
-    if (student.hasAttempted) {
-      return res.status(403).json({ success: false, message: 'You have already submitted this exam. Only one attempt is allowed.' });
-    }
-
-    // Check exam is active
-    const settings = await ExamSettings.findOne().sort({ createdAt: -1 });
-    if (!settings || !settings.isActive) {
-      return res.status(403).json({ success: false, message: 'Exam is not currently active. Please contact your administrator.' });
-    }
-
-    student.loginTime = new Date();
-    await student.save();
-
-    // Issue JWT
     const token = jwt.sign(
-      { id: student._id, rollNumber: student.rollNumber, fullName: student.fullName },
+      { studentId: student._id, rollNumber: roll, fullName: name, examId: exam._id, examCode },
       process.env.JWT_SECRET,
-      { expiresIn: `${(settings.duration || 30) + 10}m` }
+      { expiresIn: '4h' }
     );
 
     res.json({
       success: true,
       token,
-      student: { rollNumber: student.rollNumber, fullName: student.fullName },
-      examSettings: {
-        title: settings.examTitle,
-        duration: settings.duration,
-        instructions: settings.instructions
-      }
+      student: { rollNumber: roll, fullName: name },
+      examSettings: { examTitle: exam.examTitle, duration: exam.duration, instructions: exam.instructions, examCode }
     });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Server error during login' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 });
 
