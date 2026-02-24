@@ -7,7 +7,11 @@ const questionSchema = new mongoose.Schema({
   options: { type: [String], default: [] },
   correctAnswer: { type: String, required: true },
   marks: { type: Number, default: 1 },
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0 },
+
+  // 🔥 NEW FIELD
+  questionImage: { type: String, default: null }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Question', questionSchema);

@@ -238,6 +238,16 @@
       <label>Question Text *</label>
       <textarea id="qm-text" rows="3" placeholder="Enter the question..."></textarea>
     </div>
+    <div class="form-group">
+  <label>Question Text *</label>
+  <textarea id="qm-text" rows="3" placeholder="Enter the question..."></textarea>
+</div>
+
+<!-- 🔥 ADD THIS BELOW -->
+<div class="form-group">
+  <label>Upload Question Image (optional)</label>
+  <input type="file" id="qm-image" accept="image/*">
+</div>
     <div id="qm-options-wrap">
       <div class="form-row">
         <div class="form-group"><label>Option A *</label><input type="text" id="qm-opt0" placeholder="Option A"></div>
@@ -491,29 +501,75 @@
     document.getElementById('qm-fill-wrap').style.display=isMcq?'none':'';
   }
 
-  async function saveQuestion(){
-    const type=document.getElementById('qm-type').value;
-    const text=document.getElementById('qm-text').value.trim();
-    if(!text){alert('Question text is required.');return;}
-    let body={questionText:text,questionType:type,marks:parseInt(document.getElementById('qm-marks').value)||1,order:parseInt(document.getElementById('qm-order').value)||1};
-    if(type==='mcq'){
-      const opts=[0,1,2,3].map(i=>document.getElementById(`qm-opt${i}`).value.trim()).filter(o=>o);
-      if(opts.length<2){alert('At least 2 options required.');return;}
-      body.options=opts;
-      body.correctAnswer=document.getElementById('qm-correct-mcq').value;
-    } else {
-      const ans=document.getElementById('qm-correct-fill').value.trim();
-      if(!ans){alert('Correct answer is required.');return;}
-      body.options=[];
-      body.correctAnswer=ans;
-    }
-    const url=editingQId?`${API}/questions/${editingQId}`:`${API}/exams/${currentExamId}/questions`;
-    const method=editingQId?'PUT':'POST';
-    const res=await fetch(url,{method,headers:authH(),body:JSON.stringify(body)});
-    const data=await res.json();
-    if(data.success){closeModal('q-modal');loadQuestions(currentExamId);}
-    else alert(data.message);
+  async function saveQuestion() {
+  const type = document.getElementById('qm-type').value;
+  const text = document.getElementById('qm-text').value.trim();
+
+  if (!text) {
+    alert('Question text is required.');
+    return;
   }
+
+  const formData = new FormData();
+
+  formData.append('questionText', text);
+  formData.append('questionType', type);
+  formData.append('marks', parseInt(document.getElementById('qm-marks').value) || 1);
+  formData.append('order', parseInt(document.getElementById('qm-order').value) || 1);
+
+  if (type === 'mcq') {
+    const opts = [0,1,2,3]
+      .map(i => document.getElementById(`qm-opt${i}`).value.trim())
+      .filter(o => o);
+
+    if (opts.length < 2) {
+      alert('At least 2 options required.');
+      return;
+    }
+
+    formData.append('options', JSON.stringify(opts));
+    formData.append('correctAnswer', document.getElementById('qm-correct-mcq').value);
+
+  } else {
+    const ans = document.getElementById('qm-correct-fill').value.trim();
+    if (!ans) {
+      alert('Correct answer is required.');
+      return;
+    }
+
+    formData.append('options', JSON.stringify([]));
+    formData.append('correctAnswer', ans);
+  }
+
+  const imageFile = document.getElementById('qm-image').files[0];
+  if (imageFile) {
+    formData.append('questionImage', imageFile);
+  }
+
+  const url = editingQId
+    ? `${API}/questions/${editingQId}`
+    : `${API}/exams/${currentExamId}/questions`;
+
+  const method = editingQId ? 'PUT' : 'POST';
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${adminToken}`
+    },
+    body: formData
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    closeModal('q-modal');
+    loadQuestions(currentExamId);
+  } else {
+    alert(data.message);
+  }
+}
+   
 
   async function deleteQ(id){
     if(!confirm('Delete this question?')) return;

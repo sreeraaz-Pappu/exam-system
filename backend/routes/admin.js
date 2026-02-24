@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const Exam = require('../models/Exam');
 const Question = require('../models/Question');
 const Student = require('../models/Student');
@@ -17,6 +20,25 @@ function verifyAdmin(req, res, next) {
     res.status(401).json({ success: false, message: 'Invalid admin token' });
   }
 }
+// ── MULTER CONFIG ─────────────────────────────
+const uploadDir = path.join(__dirname, '../uploads');
+
+// Create uploads folder if not exists
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + '-' + file.originalname.replace(/\s+/g, '-');
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ storage });
 
 // POST /api/admin/login
 router.post('/login', (req, res) => {
@@ -81,19 +103,75 @@ router.get('/exams/:examId/questions', verifyAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
-router.post('/exams/:examId/questions', verifyAdmin, async (req, res) => {
-  try {
-    const q = await Question.create({ ...req.body, examId: req.params.examId });
-    res.json({ success: true, question: q });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
-});
+router.post(
+  '/exams/:examId/questions',
+  verifyAdmin,
+  upload.single('questionImage'),
+  async (req, res) => {
+    try {
+      const {
+        questionText,
+        questionType,
+        correctAnswer,
+        marks,
+        order
+      } = req.body;
 
-router.put('/questions/:id', verifyAdmin, async (req, res) => {
-  try {
-    const q = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json({ success: true, question: q });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
-});
+      let options = [];
+      if (req.body.options) {
+        options = JSON.parse(req.body.options);
+      }
+
+      const imagePath = req.file ? `uploads/${req.file.filename}` : null;
+
+      const q = await Question.create({
+        examId: req.params.examId,
+        questionText,
+        questionType,
+        options,
+        correctAnswer,
+        marks,
+        order,
+        questionImage: imagePath
+      });
+
+      res.json({ success: true, question: q });
+
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
+);
+
+router.put(
+  '/questions/:id',
+  verifyAdmin,
+  upload.single('questionImage'),
+  async (req, res) => {
+    try {
+      let updateData = { ...req.body };
+
+      if (req.body.options) {
+        updateData.options = JSON.parse(req.body.options);
+      }
+
+      if (req.file) {
+        updateData.questionImage = `uploads/${req.file.filename}`;
+      }
+
+      const q = await Question.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      res.json({ success: true, question: q });
+
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
+);
 
 router.delete('/questions/:id', verifyAdmin, async (req, res) => {
   try {

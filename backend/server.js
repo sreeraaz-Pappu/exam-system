@@ -14,7 +14,10 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 
 const limiter = rateLimit({ windowMs: 15*60*1000, max: 100, message: { success: false, message: 'Too many requests.' } });
-const loginLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, message: { success: false, message: 'Too many login attempts.' } });
+const loginLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, message: { success: false, message: 'Too many login attempts.' } })
+
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));;
 
 app.use('/api/', limiter);
 app.use('/api/student', loginLimiter);
@@ -31,6 +34,9 @@ app.use('/api/admin', require('./routes/admin'));
 // Static files
 app.use('/shared', express.static(path.join(__dirname, '../frontend/shared')));
 app.use('/admin', express.static(path.join(__dirname, '../frontend/admin')));
+
+// Serve uploaded question images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Dynamic exam routes - /exam/:examCode/* serves student files
 app.use('/exam', express.static(path.join(__dirname, '../frontend/student')));

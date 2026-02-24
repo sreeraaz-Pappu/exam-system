@@ -367,10 +367,25 @@
         oninput="setFill('${q._id}',this.value)"
         autocomplete="off" spellcheck="false">`;
     }
-    document.getElementById('q-area').innerHTML=`
-      <div class="q-badge">Question ${idx+1} of ${questions.length}<span class="type-tag">${q.questionType==='mcq'?'MCQ':'Fill in Blank'}</span></div>
-      <div class="q-text">${esc(q.questionText)}<span class="marks-tag">${q.marks} mark${q.marks>1?'s':''}</span></div>
-      ${ansHtml}
+    document.getElementById('q-area').innerHTML=document.getElementById('q-area').innerHTML=`
+  <div class="q-badge">
+    Question ${idx+1} of ${questions.length}
+    <span class="type-tag">${q.questionType==='mcq'?'MCQ':'Fill in Blank'}</span>
+  </div>
+
+  <div class="q-text">
+    ${esc(q.questionText)}
+    <span class="marks-tag">${q.marks} mark${q.marks>1?'s':''}</span>
+  </div>
+
+  ${q.questionImage ? `
+    <div style="margin-bottom:20px;">
+      <img src="/${q.questionImage}" 
+           style="max-width:100%;border-radius:10px;border:1px solid var(--border);">
+    </div>
+  ` : ''}
+
+  ${ansHtml}
       <div class="q-nav">
         ${idx>0?`<button class="btn btn-ghost" onclick="renderQ(${idx-1})">← Previous</button>`:''}
         ${idx<questions.length-1
