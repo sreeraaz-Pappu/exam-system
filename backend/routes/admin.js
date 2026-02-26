@@ -9,6 +9,13 @@ const Question = require('../models/Question');
 const Student = require('../models/Student');
 const Response = require('../models/Response');
 const ExcelJS = require('exceljs');
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: "dr4mnwfjc",
+  api_key: "955678812324741",
+  api_secret: "q85zzyvLExJfStvp5-EPRIxfyoE"
+});
 
 function verifyAdmin(req, res, next) {
   const auth = req.headers.authorization;
@@ -20,21 +27,13 @@ function verifyAdmin(req, res, next) {
     res.status(401).json({ success: false, message: 'Invalid admin token' });
   }
 }
-// ── MULTER CONFIG ─────────────────────────────
-const uploadDir = path.join(__dirname, '../uploads');
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-// Create uploads folder if not exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + '-' + file.originalname.replace(/\s+/g, '-');
-    cb(null, uniqueName);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "exam_questions",
+    allowed_formats: ["jpg", "png", "jpeg"]
   }
 });
 
@@ -122,7 +121,7 @@ router.post(
         options = JSON.parse(req.body.options);
       }
 
-      const imagePath = req.file ? `uploads/${req.file.filename}` : null;
+      const imagePath = req.file ? req.file.path : null;
 
       const q = await Question.create({
         examId: req.params.examId,
@@ -156,8 +155,8 @@ router.put(
       }
 
       if (req.file) {
-        updateData.questionImage = `uploads/${req.file.filename}`;
-      }
+  updateData.questionImage = req.file.path;
+}
 
       const q = await Question.findByIdAndUpdate(
         req.params.id,
